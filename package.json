@@ -30,6 +30,8 @@
     "morgan": "^1.10.0",
     "openai": "^4.20.1",
     "puppeteer": "^21.11.0",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

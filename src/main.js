@@ -20,6 +20,7 @@ require('dotenv').config({ path: path.join(__dirname, '..', '..', '.env') });
 const { HomepageGenerator } = require('./generator');
 const { validateGenerateRequest } = require('./validation');
 const ScreenshotService = require('./screenshot');
+const { specs, swaggerUi } = require('./swagger');
 
 // =============================================================================
 // CONFIGURATION
@@ -63,11 +64,45 @@ const screenshotService = new ScreenshotService();
 const startupTime = Date.now();
 
 // =============================================================================
+// SWAGGER DOCUMENTATION
+// =============================================================================
+
+// Swagger UI setup
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(specs, {
+    explorer: true,
+    customCss: '.swagger-ui .topbar { display: none }',
+    customSiteTitle: 'AI Web Upgrader - Builder Service API',
+    swaggerOptions: {
+        docExpansion: 'list',
+        filter: true,
+        showRequestDuration: true
+    }
+}));
+
+// =============================================================================
 // API ROUTES
 // =============================================================================
 
 /**
- * Health check endpoint
+ * @swagger
+ * /health:
+ *   get:
+ *     summary: Service health check
+ *     description: Returns the current health status of the builder service including dependency checks
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Service is healthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/HealthResponse'
+ *       503:
+ *         description: Service is unhealthy
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 app.get('/health', (req, res) => {
     const uptime = (Date.now() - startupTime) / 1000;
@@ -97,7 +132,60 @@ app.get('/health', (req, res) => {
 });
 
 /**
- * Generate homepage based on analysis
+ * @swagger
+ * /generate:
+ *   post:
+ *     summary: Generate homepage based on website analysis
+ *     description: Creates a modern, responsive homepage based on analysis results and business requirements
+ *     tags: [Homepage Generation]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/GenerateHomepageRequest'
+ *           example:
+ *             analysis_result:
+ *               business_type: "restaurant"
+ *               industry: "food-service"
+ *               current_issues: ["Poor mobile responsiveness", "Missing contact information"]
+ *               recommendations: ["Add mobile-responsive design", "Include clear contact form"]
+ *               target_keywords: ["local restaurant", "italian cuisine"]
+ *               confidence_score: 0.89
+ *             business_name: "Mario's Italian Restaurant"
+ *             style_preference: "modern"
+ *             additional_requirements: "Include online reservation system"
+ *     responses:
+ *       200:
+ *         description: Homepage generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/HomepageResult'
+ *                 message:
+ *                   type: string
+ *                   example: "Homepage generated successfully"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Generation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 app.post('/generate', async (req, res) => {
     const startTime = Date.now();
@@ -164,7 +252,58 @@ app.post('/generate', async (req, res) => {
 });
 
 /**
- * Get sample generated homepage for testing
+ * @swagger
+ * /generate/sample:
+ *   get:
+ *     summary: Get sample homepage data
+ *     description: Returns a sample homepage generation result for testing and demonstration purposes
+ *     tags: [Homepage Generation]
+ *     responses:
+ *       200:
+ *         description: Sample homepage data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "sample_homepage_001"
+ *                     business_name:
+ *                       type: string
+ *                       example: "Sample Business"
+ *                     generated_at:
+ *                       type: string
+ *                       format: date-time
+ *                     html_code:
+ *                       type: string
+ *                       description: "Complete HTML code for the sample homepage"
+ *                     css_code:
+ *                       type: string
+ *                       description: "CSS styles for the sample homepage"
+ *                     style_applied:
+ *                       type: string
+ *                       example: "modern"
+ *                     features_included:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       example: ["responsive_design", "modern_layout", "call_to_action"]
+ *                     estimated_improvement:
+ *                       type: string
+ *                       example: "Significant improvement in design and user experience"
+ *                 message:
+ *                   type: string
+ *                   example: "Sample homepage data"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
  */
 app.get('/generate/sample', (req, res) => {
     const sample = {
@@ -223,7 +362,53 @@ app.get('/generate/sample', (req, res) => {
 });
 
 /**
- * Root endpoint
+ * @swagger
+ * /:
+ *   get:
+ *     summary: Service information
+ *     description: Returns basic information about the builder service including available endpoints
+ *     tags: [Service Info]
+ *     responses:
+ *       200:
+ *         description: Service information retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 service:
+ *                   type: string
+ *                   example: "AI Web Upgrader - Homepage Builder Service"
+ *                 version:
+ *                   type: string
+ *                   example: "1.0.0"
+ *                 status:
+ *                   type: string
+ *                   example: "running"
+ *                 environment:
+ *                   type: string
+ *                   example: "development"
+ *                 endpoints:
+ *                   type: object
+ *                   properties:
+ *                     health:
+ *                       type: string
+ *                       example: "/health"
+ *                     generate:
+ *                       type: string
+ *                       example: "/generate"
+ *                     sample:
+ *                       type: string
+ *                       example: "/generate/sample"
+ *                     screenshot:
+ *                       type: string
+ *                       example: "/screenshot"
+ *                     docs:
+ *                       type: string
+ *                       example: "/docs"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
  */
 app.get('/', (req, res) => {
     res.json({
@@ -235,14 +420,68 @@ app.get('/', (req, res) => {
             health: '/health',
             generate: '/generate',
             sample: '/generate/sample',
-            screenshot: '/screenshot'
+            screenshot: '/screenshot',
+            docs: '/docs'
         },
         timestamp: new Date().toISOString()
     });
 });
 
 /**
- * Generate screenshot of homepage
+ * @swagger
+ * /screenshot:
+ *   post:
+ *     summary: Generate screenshot of homepage
+ *     description: Creates a screenshot of the provided HTML/CSS content with configurable viewport options
+ *     tags: [Screenshot Generation]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ScreenshotRequest'
+ *           example:
+ *             html_content: "<!DOCTYPE html><html><head><title>Test</title></head><body><h1>Hello World</h1></body></html>"
+ *             css_content: "body { font-family: Arial, sans-serif; }"
+ *             viewport_width: 1200
+ *             viewport_height: 800
+ *     responses:
+ *       200:
+ *         description: Screenshot generated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   $ref: '#/components/schemas/ScreenshotResult'
+ *                 message:
+ *                   type: string
+ *                   example: "Screenshot generated successfully"
+ *                 timestamp:
+ *                   type: string
+ *                   format: date-time
+ *       400:
+ *         description: Invalid request data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       503:
+ *         description: Screenshot service unavailable
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Screenshot generation failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 app.post('/screenshot', async (req, res) => {
     const startTime = Date.now();
